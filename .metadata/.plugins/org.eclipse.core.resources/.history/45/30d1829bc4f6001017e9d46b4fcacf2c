@@ -1,0 +1,53 @@
+package com.project.service;
+
+import java.util.List;
+
+import org.modelmapper.ModelMapper;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.project.dto.CreateUserDTO;
+import com.project.dto.UserDTO;
+import com.project.entities.User;
+import com.project.repository.UserRespo;
+
+import lombok.AllArgsConstructor;
+
+@Service
+@Transactional
+@AllArgsConstructor
+public class UserServiceImpl implements UserService {
+
+    private final UserRespo userRespo;
+    private final ModelMapper modelMapper;
+
+    @Override
+    public UserDTO createUser(CreateUserDTO dto) {
+
+       
+        User user = modelMapper.map(dto, User.class);
+
+
+        User savedUser = userRespo.save(user);
+
+        return modelMapper.map(savedUser, UserDTO.class);
+    }
+
+    @Override
+    public UserDTO getUserById(Long id) {
+        User user = userRespo.findById(id)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        return modelMapper.map(user, UserDTO.class);
+    }
+    
+    @Override
+    public List<UserDTO> listAllUsers() {
+
+        return userRespo.findAll()
+                .stream()
+                .map(entity -> modelMapper.map(entity, UserDTO.class))
+                .toList();
+    }
+
+}

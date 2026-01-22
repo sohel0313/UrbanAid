@@ -1,0 +1,27 @@
+package com.project.controller;
+
+import org.springframework.web.bind.annotation.*;
+
+import com.project.dto.CreateUserDTO;
+import com.project.dto.UserDTO;
+import com.project.service.UserService;
+
+import lombok.AllArgsConstructor;
+
+@RestController
+@RequestMapping("/users")
+@AllArgsConstructor
+public class UserController {
+
+    private final UserService userService;
+
+    @PostMapping
+    public UserDTO createUser(@RequestBody CreateUserDTO dto) {
+        return userService.createUser(dto);
+    }
+
+    @GetMapping("/{id}")
+    public UserDTO getUser(@PathVariable Long id) {
+        return userService.getUserById(id);
+    }
+}

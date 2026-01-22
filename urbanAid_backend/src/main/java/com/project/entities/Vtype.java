@@ -1,0 +1,12 @@
+package com.project.entities;
+
+public enum Vtype {
+	GENERAL_HELP,
+    TECHNICAL_SUPPORT,
+    FIRST_AID,
+    ANIMAL_RESCUE,
+    ENVIRONMENT_SUPPORT,
+    INFRASTRUCTURE_SUPPORT,
+    SAFETY_SUPPORT,
+    DISASTER_RESPONSE
+}

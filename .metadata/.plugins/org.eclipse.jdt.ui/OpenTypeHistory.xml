@@ -1,5 +1,2 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<typeInfoHistroy>
-    <typeInfo handle="=healtcare_backend/C:\/Users\/Sohel\/.m2\/repository\/org\/springframework\/data\/spring-data-jpa\/3.5.5\/spring-data-jpa-3.5.5.jar=/maven.pomderived=/true=/=/maven.groupId=/org.springframework.data=/=/maven.artifactId=/spring-data-jpa=/=/maven.version=/3.5.5=/=/maven.scope=/compile=/=/maven.pomderived=/true=/&lt;org.springframework.data.jpa.repository(JpaRepository.class[JpaRepository" modifiers="1537" timestamp="1762091624529"/>
-    <typeInfo handle="=healtcare_backend/src\/main\/java=/optional=/true=/=/maven.pomderived=/true=/&lt;com.project.service{ReportService.java[ReportService" modifiers="513" timestamp="1769060134630"/>
-</typeInfoHistroy>
+<typeInfoHistroy/>

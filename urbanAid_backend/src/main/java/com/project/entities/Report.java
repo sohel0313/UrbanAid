@@ -20,9 +20,15 @@ public class Report extends BaseEntity {
 
     @Column(nullable = false, length = 200)
     private String location;
+    
+    @Column(nullable = false)
+    private Double latitude;
+
+    @Column(nullable = false)
+    private Double longitude;
 
     @Column(nullable = false, length = 500)
-    private String imagePath;
+    private String imagepath;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

@@ -18,8 +18,14 @@ public class CreateReportDTO {
 
     @NotBlank(message = "Location is required")
     private String location;
+    @NotNull(message = "Latitude is required")
+    private Double latitude;
 
-    private String image;
+    @NotNull(message = "Longitude is required")
+    private Double longitude;
+
+
+    private String imagepath;
 
     @NotNull(message = "Category is required")
     private Category category;

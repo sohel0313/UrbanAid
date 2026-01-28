@@ -20,17 +20,28 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 @Slf4j
 public class CustomUserDetailsServiceImpl implements UserDetailsService {
-	private final UserRepository userRepository;
-	
-	@Override
-	public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-		log.info("********* in load user ");
-		User user=userRepository.findByEmail(email)
-				.orElseThrow(() -> new UsernameNotFoundException("User by this email doesn't exist!!!!!!!!"));
-		//email verified (user exists by the specified email)
-		return new UserPrincipal(String.valueOf(user.getId()),
-				user.getEmail(),user.getPassword(),
-				List.of(new SimpleGrantedAuthority(user.getUserType().name())),user.getUserType().name());
-	}
 
+    private final UserRepository userRepository;
+
+    @Override
+    public UserDetails loadUserByUsername(String email)
+            throws UsernameNotFoundException {
+
+        log.info("Loading user by email: {}", email);
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() ->
+                        new UsernameNotFoundException(
+                                "User with this email does not exist"));
+
+        // ✅ Correct: Long userId + authorities only once
+        return new UserPrincipal(
+                user.getId(),                      // Long
+                user.getEmail(),
+                user.getPassword(),
+                List.of(new SimpleGrantedAuthority(
+                        user.getUserType().name()
+                ))
+        );
+    }
 }

@@ -14,49 +14,55 @@ import io.jsonwebtoken.security.Keys;
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 
-@Component //to declare a spring bean 
+@Component
 @Slf4j
 public class JwtUtils {
-	//value based D.I
-	@Value("${jwt.expiration.time}") //SpEL
-	private long jwtExpirationTime;
-	@Value("${jwt.secret}")
-	private String jwtSecret;
-	
-	//represents symmetric secret key used for signing as well as verifying JWT
-	private SecretKey secretKey;
-	
-	@PostConstruct
-	public void myInit()
-	{
-		log.info("****** creating symmetric secret key {} {} ",jwtSecret,jwtExpirationTime);
-		secretKey=Keys.hmacShaKeyFor(jwtSecret.getBytes());		
-	}
-	//create JWT - header , payload, signature (method will be used by UserController : sign in)
-	public String generateToken(UserPrincipal principal) {
-		//iat  
-		Date now=new Date();
-		//exp
-		Date expiresAt=new Date(now.getTime()+jwtExpirationTime);
-		return Jwts.builder() //creates a builder for JWT creation
-				.subject(principal.getEmail()) //setting subject 
-				.issuedAt(now) //iat
-				.expiration(expiresAt) //exp
-				//custom claims - user id & user role
-				.claims(Map.of("user_id",String.valueOf(principal.getUserId())
-						, "user_role", principal.getUserRole()))
-				.signWith(secretKey)//sign the JWT
-				.compact();
-				
-	}
-	//will be called by -Custom JWT Filter
-	public Claims validateToken(String jwt) {
-		return Jwts.parser() //attach a parser
-				.verifyWith(secretKey)
-				.build() //builds JwtsParser
-				.parseSignedClaims(jwt)
-				//=> valid JWT
-				.getPayload();		//extracting Claims from validated JWT
-	}
 
+    @Value("${jwt.expiration.time}")
+    private long jwtExpirationTime;
+
+    @Value("${jwt.secret}")
+    private String jwtSecret;
+
+    private SecretKey secretKey;
+
+    @PostConstruct
+    public void init() {
+        log.info("Initializing JWT secret key");
+        secretKey = Keys.hmacShaKeyFor(jwtSecret.getBytes());
+    }
+
+    // Generate JWT
+    public String generateToken(UserPrincipal principal) {
+
+        Date now = new Date();
+        Date expiry = new Date(now.getTime() + jwtExpirationTime);
+
+        // Extract single role (you are using single-role system)
+        String role = principal.getAuthorities()
+                .iterator()
+                .next()
+                .getAuthority();
+
+        return Jwts.builder()
+                .subject(principal.getUsername())     // email
+                .issuedAt(now)
+                .expiration(expiry)
+                .claims(Map.of(
+                        "user_id", principal.getUserId(),
+                        "user_role", role
+                ))
+                .signWith(secretKey)
+                .compact();
+    }
+
+    // Validate JWT
+    public Claims validateToken(String jwt) {
+
+        return Jwts.parser()
+                .verifyWith(secretKey)
+                .build()
+                .parseSignedClaims(jwt)
+                .getPayload();
+    }
 }

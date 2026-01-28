@@ -13,6 +13,8 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.servlet.config.annotation.CorsRegistry;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -30,6 +32,9 @@ public class SecurityConfiguration {
     SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
         http
+            // ✅ Enable CORS
+            .cors(cors -> {})
+            
             // Disable CSRF (JWT + REST)
             .csrf(csrf -> csrf.disable())
 
@@ -42,29 +47,39 @@ public class SecurityConfiguration {
 
                 // 🔓 Public endpoints
                 .requestMatchers(
-                        "/v3/api-docs/**",
+                        "/auth/**",
+                        "/citizens/register",
+                        "/volunteers/register",
+                        "/test-email",
+                        "/alerts",
                         "/swagger-ui/**",
-                        "/swagger-ui.html",
-                        "/users/register",
-                        "/users/signin"
+                        "/v3/api-docs/**"
                 ).permitAll()
 
-                // Preflight for React
-                .requestMatchers(HttpMethod.OPTIONS).permitAll()
+                // Preflight requests
+                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
                 // ADMIN
-                .requestMatchers(HttpMethod.GET, "/users").hasRole("ADMIN")
-                .requestMatchers(HttpMethod.GET, "/users/**").hasRole("ADMIN")
-                .requestMatchers(HttpMethod.GET, "/reports/all").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.GET, "/reports/all")
+                .hasRole("ADMIN")
 
-                //CITIZEN only
-                .requestMatchers(HttpMethod.POST, "/reports").hasRole("CITIZEN")
-                .requestMatchers(HttpMethod.GET, "/reports/my").hasRole("CITIZEN")
+                // CITIZEN
+                .requestMatchers(HttpMethod.POST, "/reports")
+                .hasRole("CITIZEN")
+                .requestMatchers(HttpMethod.GET, "/reports/my")
+                .hasRole("CITIZEN")
+                .requestMatchers(HttpMethod.POST, "/reports/upload-image")
+                .hasRole("CITIZEN")
 
-                //VOLUNTEER only
-                .requestMatchers(HttpMethod.PUT, "/reports/*/status").hasRole("VOLUNTEER")
+                // VOLUNTEER
+                .requestMatchers(HttpMethod.GET, "/reports/nearby")
+                .hasRole("VOLUNTEER")
+                .requestMatchers(HttpMethod.PUT, "/reports/*/claim")
+                .hasRole("VOLUNTEER")
+                .requestMatchers(HttpMethod.PUT, "/reports/*/status")
+                .hasRole("VOLUNTEER")
 
-                // 🔒 Everything else needs authentication
+                // 🔒 Everything else
                 .anyRequest().authenticated()
             )
 
@@ -74,7 +89,7 @@ public class SecurityConfiguration {
         return http.build();
     }
 
-    // Authentication manager for signin
+    // Authentication manager
     @Bean
     AuthenticationManager authenticationManager(AuthenticationConfiguration config)
             throws Exception {
@@ -85,5 +100,19 @@ public class SecurityConfiguration {
     @Bean
     PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
+    }
+    
+    @Bean
+    public WebMvcConfigurer corsConfigurer() {
+        return new WebMvcConfigurer() {
+            @Override
+            public void addCorsMappings(CorsRegistry registry) {
+                registry.addMapping("/**")
+                        .allowedOrigins("http://localhost:3000") // Your React Port
+                        .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
+                        .allowedHeaders("*")
+                        .allowCredentials(true);
+            }
+        };
     }
 }

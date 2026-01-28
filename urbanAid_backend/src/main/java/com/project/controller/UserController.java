@@ -140,7 +140,7 @@ public class UserController {
 		//downcast Object -> UserPrincipal
 		UserPrincipal principal=(UserPrincipal) fullyAuth.getPrincipal();
 			return ResponseEntity.status(HttpStatus.CREATED) //SC 201
-					.body(new AuthResp(jwtUtils.generateToken(principal),"Successful Login"));		
+					.body(new AuthResp(jwtUtils.generateToken(principal)," ","Successful Login",1l));		
 	}
 
 

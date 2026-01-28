@@ -1,5 +1,6 @@
 package com.project.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.project.entities.Category;
 import com.project.entities.Status;
 
@@ -15,8 +16,8 @@ public class ReportDTO {
 
     private String description;
     private String location;
-    private String image;
-
+//    @JsonProperty("image_path")
+    private String imagepath;
     @NotNull
     private Status status;
 

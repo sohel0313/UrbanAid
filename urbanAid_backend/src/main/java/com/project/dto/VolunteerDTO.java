@@ -19,8 +19,11 @@ public class VolunteerDTO {
     @NotBlank(message = "Area is required")
     private String area;
 
-    @NotBlank(message = "Location is required")
-    private String location;
+    @NotNull(message = "Latitude is required")
+    private Double latitude;
+
+    @NotNull(message = "Longitude is required")
+    private Double longitude;
 
     @NotNull(message = "Availability must be specified")
     private Boolean availability;
@@ -28,6 +31,6 @@ public class VolunteerDTO {
     @NotBlank(message = "Skill is required")
     private String skill;
 
-    @NotNull(message = "User ID is required")
+//    @NotNull(message = "User ID is required")
     private Long userId;
 }

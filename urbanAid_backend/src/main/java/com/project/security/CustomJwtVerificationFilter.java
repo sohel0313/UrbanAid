@@ -42,7 +42,6 @@ public class CustomJwtVerificationFilter extends OncePerRequestFilter {
             try {
                 String jwt = authHeader.substring(7);
 
-                // ✅ ADDED CHECK: Catch common frontend 'null' string errors
                 if (jwt.equals("null") || jwt.equals("undefined") || jwt.isBlank()) {
                     log.warn("Bearer token is empty or literally 'null'/'undefined'");
                     throw new RuntimeException("Missing or malformed token string");
@@ -80,7 +79,7 @@ public class CustomJwtVerificationFilter extends OncePerRequestFilter {
 
                 ApiResponse resp = new ApiResponse("Failed", "Authentication Error: " + e.getMessage());
                 response.getWriter().write(objectMapper.writeValueAsString(resp));
-                // ⛔ IMPORTANT: Return here to stop further execution of the chain
+                //  Return here to stop further execution of the chain
                 return;
             }
         } else {

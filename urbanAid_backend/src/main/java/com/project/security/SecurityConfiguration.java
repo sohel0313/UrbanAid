@@ -32,7 +32,6 @@ public class SecurityConfiguration {
     SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
         http
-            // ✅ Enable CORS
             .cors(cors -> {})
             
             // Disable CSRF (JWT + REST)
@@ -45,7 +44,7 @@ public class SecurityConfiguration {
             // Authorization rules
             .authorizeHttpRequests(auth -> auth
 
-                // 🔓 Public endpoints
+                // Public endpoints
                 .requestMatchers(
                         "/auth/**",
                         "/citizens/register",
@@ -58,6 +57,7 @@ public class SecurityConfiguration {
 
                 // Preflight requests
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                .requestMatchers(HttpMethod.GET,"/reports/image/**").permitAll()
 
                 // ADMIN
                 .requestMatchers(HttpMethod.GET, "/reports/all")

@@ -44,11 +44,9 @@ public class AuthController {
         // Generate the token
         String token = jwtUtils.generateToken(principal);
 
-        // ✅ FIX: Extract role and userId to send back to React
         String role = principal.getAuthorities().iterator().next().getAuthority();
         Long userId = principal.getUserId();
 
-        // ✅ FIX: Update the constructor call (ensure AuthResp.java has these fields)
         return ResponseEntity.ok(
                 new AuthResp(token, "Login successful", role, userId));
     }

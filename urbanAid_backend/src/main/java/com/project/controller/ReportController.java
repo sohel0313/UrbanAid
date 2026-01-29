@@ -37,7 +37,7 @@ public class ReportController {
 
     private final ReportService reportService;
 
-    // 1️⃣ CITIZEN CREATES REPORT
+    // 1 CITIZEN CREATES REPORT
     @PostMapping
     @PreAuthorize("hasRole('CITIZEN')")
     public ResponseEntity<ReportDTO> createReport(
@@ -49,7 +49,7 @@ public class ReportController {
                 .body(reportService.createReport(dto, citizenId));
     }
 
-    // 2️⃣ VOLUNTEER VIEWS NEARBY REPORTS
+    // 2️ VOLUNTEER VIEWS NEARBY REPORTS
     @GetMapping("/nearby")
     @PreAuthorize("hasRole('VOLUNTEER')")
     public ResponseEntity<List<ReportDTO>> getNearbyReports(
@@ -59,7 +59,7 @@ public class ReportController {
                 reportService.getNearbyUnassignedReports(volunteerId));
     }
 
-    // 3️⃣ VOLUNTEER CLAIMS REPORT
+    // 3️ VOLUNTEER CLAIMS REPORT
     @PutMapping("/{reportId}/claim")
     @PreAuthorize("hasRole('VOLUNTEER')")
     public ResponseEntity<ReportDTO> claimReport(
@@ -70,7 +70,7 @@ public class ReportController {
                 reportService.claimReport(reportId, volunteerId));
     }
 
-    // 4️⃣ VOLUNTEER UPDATES STATUS
+    // 4️ VOLUNTEER UPDATES STATUS
     @PutMapping("/{reportId}/status")
     @PreAuthorize("hasRole('VOLUNTEER')")
     public ResponseEntity<ReportDTO> updateStatus(
@@ -112,7 +112,7 @@ public class ReportController {
                     .body("Image upload failed");
         }}
 
-    // 5️⃣ CITIZEN VIEWS OWN REPORTS
+    // 5️ CITIZEN VIEWS OWN REPORTS
     @GetMapping("/my")
     @PreAuthorize("hasRole('CITIZEN')")
     public ResponseEntity<List<ReportDTO>> getMyReports(Authentication authentication) {
@@ -125,7 +125,7 @@ public class ReportController {
         );
     }
 
-    // 6️⃣ ADMIN MONITORING
+    // 6️ ADMIN MONITORING
     @GetMapping("/all")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<ReportDTO>> getAllReports() {

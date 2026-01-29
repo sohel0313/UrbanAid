@@ -91,7 +91,7 @@ public class ReportServiceImpl implements ReportService {
     @Override
     public ReportDTO claimReport(Long reportId, Long volunteerId) {
 
-        Volunteer volunteer = volunteerRepo.findById(volunteerId)
+        Volunteer volunteer = volunteerRepo.findByMyuserId(volunteerId)
                 .orElseThrow(() ->
                         new ResourceNotFoundException("Volunteer not found"));
 

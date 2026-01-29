@@ -21,7 +21,7 @@ jobs:
       - name: Deploy to Firebase
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
-          entryPoint: frontend   # ✅ THIS IS THE FIX
+          entryPoint: frontend   
           repoToken: ${{ secrets.GITHUB_TOKEN }}
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_URBANAID_83B01 }}
           channelId: live

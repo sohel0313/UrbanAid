@@ -39,13 +39,10 @@ public class UserController {
 	private final JwtUtils jwtUtils;
 
 
-    /*
-     * 1. List all users
-     * URI : /users
-     * Method : GET
-     * Success : 200 + List<UserDTO>
-     * Empty : 204
-     */
+    
+     //1. List all users
+     
+     
     @GetMapping
     @Operation(description = "List all users")
     public ResponseEntity<?> listAllUsers() {
@@ -60,10 +57,7 @@ public class UserController {
 
     /*
      * 2. Get user details by ID
-     * URI : /users/{userId}
-     * Method : GET
-     * Success : 200 + UserDTO
-     * Failure : 404
+   
      */
     @GetMapping("/{userId}")
     @Operation(description = "Get user details by ID")
@@ -79,10 +73,7 @@ public class UserController {
 
     /*
      * 3. Register User
-     * URI : /users/register
-     * Method : POST
-     * Payload : CreateUserDTO
-     * Success : 201 + UserDTO
+     
      */
     @PostMapping("/register")
     @Operation(description = "Register a new user")
@@ -97,10 +88,7 @@ public class UserController {
 
     /*
      * 4. Complete update user details
-     * URI : /users/{id}
-     * Method : PUT
-     * Payload : User (Entity)
-     * Success : 200
+     
      */
     @PutMapping("/{id}")
     @Operation(description = "Complete update user details")
@@ -115,10 +103,7 @@ public class UserController {
 
     /*
      * 5. User Sign-In (Placeholder)
-     * URI : /users/signin
-     * Method : POST
-     * Payload : email + password
-     * Success : 200
+    
      */
     @PostMapping("/signin")
 	@Operation(description = "User Authentication With Spring Security")
@@ -136,7 +121,7 @@ public class UserController {
 		//=> authentication success -> create JWT 
 		log.info("*****After -  is authenticated {}",fullyAuth.isAuthenticated());//true
 		log.info("**** auth {} ",fullyAuth);//principal : user details , null : pwd , Collection<GrantedAuth>		
-		log.info("***** class of principal {}",fullyAuth.getPrincipal().getClass());//com.healthcare.security.UserPrincipal implemented UserDetails interface
+		log.info("***** class of principal {}",fullyAuth.getPrincipal().getClass());//com.project.security.UserPrincipal implemented UserDetails interface
 		//downcast Object -> UserPrincipal
 		UserPrincipal principal=(UserPrincipal) fullyAuth.getPrincipal();
 			return ResponseEntity.status(HttpStatus.CREATED) //SC 201
@@ -146,9 +131,7 @@ public class UserController {
 
     /*
      * 6. Encrypt passwords (Admin Utility)
-     * URI : /users/pwd-encryption
-     * Method : PATCH
-     * Success : 200
+     
      */
     @PatchMapping("/pwd-encryption")
     @Operation(description = "Encrypt passwords of all users")

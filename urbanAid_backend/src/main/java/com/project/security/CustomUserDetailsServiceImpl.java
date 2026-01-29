@@ -34,7 +34,7 @@ public class CustomUserDetailsServiceImpl implements UserDetailsService {
                         new UsernameNotFoundException(
                                 "User with this email does not exist"));
 
-        // ✅ Correct: Long userId + authorities only once
+
         return new UserPrincipal(
                 user.getId(),                      // Long
                 user.getEmail(),

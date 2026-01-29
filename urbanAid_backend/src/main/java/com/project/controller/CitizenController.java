@@ -24,9 +24,8 @@ public class CitizenController {
 
     private final UserService userService;
 
-    // -------------------------------------------------
     // Citizen self registration
-    // -------------------------------------------------
+    
     @PostMapping("/register")
     @Operation(description = "Register a new citizen")
     public ResponseEntity<UserDTO> registerCitizen(
@@ -37,9 +36,8 @@ public class CitizenController {
                 .body(userService.createUser(dto));
     }
 
-    // -------------------------------------------------
     // Citizen views own profile
-    // -------------------------------------------------
+    
     @GetMapping("/me")
     @PreAuthorize("hasAuthority('ROLE_CITIZEN')")
     @Operation(description = "Get logged-in citizen profile")

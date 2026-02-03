@@ -6,6 +6,8 @@ import { Label } from '@/components/ui/label';
 import { MapPin, Mail, Lock, User, ArrowLeft, CheckCircle2 } from 'lucide-react';
 import { UserRole } from '@/types';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/hooks/useAuth';
+import { useToast } from '@/hooks/use-toast';
 
 const roles: { value: UserRole; label: string; description: string }[] = [
   {
@@ -18,32 +20,42 @@ const roles: { value: UserRole; label: string; description: string }[] = [
     label: 'Volunteer',
     description: 'Help resolve community issues',
   },
-  {
-    value: 'admin',
-    label: 'Administrator',
-    description: 'Manage reports and coordinate volunteers',
-  },
+  // Admin registration is disabled for public users
 ];
 
 export default function Register() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [mobile, setMobile] = useState('');
   const [role, setRole] = useState<UserRole>('citizen');
   const [isLoading, setIsLoading] = useState(false);
+  const { register } = useAuth();
+  const { toast } = useToast();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    
-    // Simulate registration - in production, this would call an API
-    setTimeout(() => {
+
+    // validate mobile (required by backend)
+    const mobileRegex = /^[6-9][0-9]{9}$/;
+    if (!mobileRegex.test(mobile)) {
       setIsLoading(false);
-      // Navigate to the appropriate dashboard based on role
-      navigate(`/${role}`);
-    }, 1000);
-  };
+      toast({ title: 'Invalid mobile', description: 'Enter a valid 10-digit mobile starting with 6-9', variant: 'destructive' });
+      return;
+    }
+
+    try {
+      await register({ name, email, password, role, mobile });
+      setIsLoading(false);
+      toast({ title: 'Registration successful', description: 'You may now sign in' });
+      navigate('/login');
+    } catch (err: any) {
+      setIsLoading(false);
+      toast({ title: 'Registration failed', description: err?.message || 'Unable to register', variant: 'destructive' });
+    }
+  }; 
 
   return (
     <div className="min-h-screen bg-background flex">
@@ -102,6 +114,26 @@ export default function Register() {
                 />
               </div>
             </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="mobile">Mobile</Label>
+              <div className="relative">
+                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  id="mobile"
+                  type="tel"
+                  placeholder="Enter your mobile number"
+                  className="pl-10"
+                  value={mobile}
+                  onChange={(e) => setMobile(e.target.value)}
+                  required
+                  pattern="^[6-9][0-9]{9}$"
+                  inputMode="numeric"
+                  title="10-digit mobile starting with 6-9"
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">Enter a valid 10-digit mobile number (starts with 6-9)</p>
+            </div> 
 
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>

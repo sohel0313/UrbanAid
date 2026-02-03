@@ -29,14 +29,20 @@ import lombok.extern.slf4j.Slf4j;
 @RestController
 @RequestMapping("/users")
 @CrossOrigin(origins = "http://localhost:3000")
-@RequiredArgsConstructor
 @Validated
 @Slf4j
 public class UserController {
 
     private final UserService userService;
-	private final AuthenticationManager authenticationManager;
-	private final JwtUtils jwtUtils;
+    private final AuthenticationManager authenticationManager;
+    private final JwtUtils jwtUtils;
+
+    // Explicit constructor (avoid Lombok constructor issues at runtime)
+    public UserController(UserService userService, AuthenticationManager authenticationManager, JwtUtils jwtUtils) {
+        this.userService = userService;
+        this.authenticationManager = authenticationManager;
+        this.jwtUtils = jwtUtils;
+    }
 
 
     
@@ -124,21 +130,25 @@ public class UserController {
 		log.info("***** class of principal {}",fullyAuth.getPrincipal().getClass());//com.project.security.UserPrincipal implemented UserDetails interface
 		//downcast Object -> UserPrincipal
 		UserPrincipal principal=(UserPrincipal) fullyAuth.getPrincipal();
-			return ResponseEntity.status(HttpStatus.CREATED) //SC 201
-					.body(new AuthResp(jwtUtils.generateToken(principal)," ","Successful Login",1l));		
+		// Extract role and user id to return in response
+		String role = "";
+		if (principal.getAuthorities() != null && !principal.getAuthorities().isEmpty()) {
+			role = principal.getAuthorities().iterator().next().getAuthority();
+		}
+		Long userId = principal.getUserId();
+		return ResponseEntity.ok(new AuthResp(jwtUtils.generateToken(principal), "Successful Login", role, userId));
 	}
 
-
-    /*
-     * 6. Encrypt passwords (Admin Utility)
-     
-     */
-    @PatchMapping("/pwd-encryption")
-    @Operation(description = "Encrypt passwords of all users")
-    public ResponseEntity<?> encryptPasswords() {
-
-        log.info("encrypting user passwords");
-        // implement later in service if needed
-        return ResponseEntity.ok("Passwords encrypted successfully");
+    @PostMapping("/admin/reset-password")
+    @Operation(description = "Development: Reset a user's password (email + password in body)")
+    public ResponseEntity<?> adminResetPassword(@RequestBody java.util.Map<String, String> body) {
+        String email = body.get("email");
+        String newPassword = body.get("password");
+        if (email == null || newPassword == null) {
+            return ResponseEntity.badRequest().body("email and password are required");
+        }
+        userService.updatePasswordByEmail(email, newPassword);
+        return ResponseEntity.ok("Password updated");
     }
+
 }

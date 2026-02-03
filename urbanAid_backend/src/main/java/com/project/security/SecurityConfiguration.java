@@ -46,9 +46,11 @@ public class SecurityConfiguration {
 
                 // Public endpoints
                 .requestMatchers(
-                        "/auth/**",
+                                "/auth/**",
                         "/citizens/register",
                         "/volunteers/register",
+                        "/users/register",
+                        "/users/signin",
                         "/test-email",
                         "/alerts",
                         "/swagger-ui/**",
@@ -60,24 +62,29 @@ public class SecurityConfiguration {
                 .requestMatchers(HttpMethod.GET,"/reports/image/**").permitAll()
 
                 // ADMIN
-                .requestMatchers(HttpMethod.GET, "/reports/all")
-                .hasRole("ADMIN")
+                .requestMatchers("/admin/**").hasAuthority("ROLE_ADMIN")
+                .requestMatchers(HttpMethod.GET, "/reports/all").hasAuthority("ROLE_ADMIN")
 
                 // CITIZEN
                 .requestMatchers(HttpMethod.POST, "/reports")
-                .hasRole("CITIZEN")
+                .hasAuthority("ROLE_CITIZEN")
+                // Allow both citizens and volunteers to fetch "my" reports
                 .requestMatchers(HttpMethod.GET, "/reports/my")
-                .hasRole("CITIZEN")
+                .hasAnyAuthority("ROLE_CITIZEN","ROLE_VOLUNTEER")
                 .requestMatchers(HttpMethod.POST, "/reports/upload-image")
-                .hasRole("CITIZEN")
+                .hasAuthority("ROLE_CITIZEN")
 
                 // VOLUNTEER
                 .requestMatchers(HttpMethod.GET, "/reports/nearby")
-                .hasRole("VOLUNTEER")
+                .hasAuthority("ROLE_VOLUNTEER")
                 .requestMatchers(HttpMethod.PUT, "/reports/*/claim")
-                .hasRole("VOLUNTEER")
+                .hasAuthority("ROLE_VOLUNTEER")
                 .requestMatchers(HttpMethod.PUT, "/reports/*/status")
-                .hasRole("VOLUNTEER")
+                .hasAuthority("ROLE_VOLUNTEER")
+
+                // Allow fetching a single report by id for authenticated users with roles
+                .requestMatchers(HttpMethod.GET, "/reports/*")
+                .hasAnyAuthority("ROLE_CITIZEN","ROLE_VOLUNTEER","ROLE_ADMIN")
 
                 // 🔒 Everything else
                 .anyRequest().authenticated()
@@ -108,7 +115,7 @@ public class SecurityConfiguration {
             @Override
             public void addCorsMappings(CorsRegistry registry) {
                 registry.addMapping("/**")
-                        .allowedOrigins("http://localhost:3000") // Your React Port
+                        .allowedOrigins("http://localhost:3000", "http://localhost:5173", "http://127.0.0.1:5173") // React / Vite dev ports
                         .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                         .allowedHeaders("*")
                         .allowCredentials(true);

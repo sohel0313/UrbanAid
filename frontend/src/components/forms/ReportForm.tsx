@@ -61,10 +61,23 @@ export function ReportForm({ onSubmit, isLoading }: ReportFormProps) {
     setImagePreview(null);
   };
 
+  const [errors, setErrors] = useState<{ description?: string; address?: string; category?: string }>({});
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!category) return;
-    
+    const newErrors: { description?: string; address?: string; category?: string } = {};
+
+    if (!category) newErrors.category = 'Please select a category';
+    if (!address || !address.trim()) newErrors.address = 'Location is required';
+    if (!description || description.trim().length < 10) newErrors.description = 'Description must be at least 10 characters';
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+
+    setErrors({});
+
     onSubmit({
       title,
       description,
@@ -112,7 +125,9 @@ export function ReportForm({ onSubmit, isLoading }: ReportFormProps) {
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           required
+          minLength={10}
         />
+        {errors.description && <p className="text-sm text-destructive mt-1">{errors.description}</p>}
       </div>
 
       <div className="space-y-2">

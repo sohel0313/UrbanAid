@@ -30,6 +30,7 @@ public class ReportServiceImpl implements ReportService {
     private final ReportRepository reportRepo;
     private final UserRepository userRepo;
     private final VolunteerRepository volunteerRepo;
+    private final com.project.repository.NotificationRepository notificationRepo;
     private final ModelMapper mapper;
     private final EmailService emailService;
     private final AlertService alertService;
@@ -52,6 +53,10 @@ public class ReportServiceImpl implements ReportService {
         Report report = mapper.map(dto, Report.class);
         report.setCitizen(citizen);
         report.setStatus(Status.CREATED);
+        // Ensure imagepath isn't null to avoid DB constraint issues
+        if (report.getImagepath() == null) {
+            report.setImagepath("");
+        }
         
         //send email
         AlertRequestDto dt=new AlertRequestDto();
@@ -99,19 +104,78 @@ public class ReportServiceImpl implements ReportService {
             throw new InvalidInputException("Volunteer not available");
         }
 
-        Report report = reportRepo.findById(reportId)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException("Report not found"));
-
-        if (report.getStatus() != Status.CREATED) {
-            throw new InvalidInputException("Report already assigned or closed");
+        // Use a conditional update to make the claim operation race-safe. The repository
+        // executes an UPDATE ... WHERE id=:id AND status=:expected and returns the
+        // number of rows affected. If 0 rows were updated, someone else claimed it.
+        int updated = reportRepo.assignIfStatus(reportId, volunteer, Status.ASSIGNED, Status.CREATED);
+        if (updated == 0) {
+            throw new com.project.custom_exceptions.ResourceConflictException("Report already assigned or closed");
         }
 
-        // Atomic self-assignment
-        report.setVolunteer(volunteer);
-        report.setStatus(Status.ASSIGNED);
+        // fetch the updated report and return it
+        Report updatedReport = reportRepo.findById(reportId)
+                .orElseThrow(() -> new ResourceNotFoundException("Report not found after assign"));
 
-        return mapper.map(reportRepo.save(report), ReportDTO.class);
+        // Create notifications for citizen and volunteer
+        try {
+            // Message for citizen
+            String volName = volunteer.getMyuser() != null ? volunteer.getMyuser().getName() : "A volunteer";
+            String citizenMsg = String.format("%s has claimed your report: %s", volName, (updatedReport.getDescription() != null ? updatedReport.getDescription().split("\\n")[0] : "Report"));
+
+            com.project.entities.Notification n1 = new com.project.entities.Notification();
+            n1.setMessage(citizenMsg);
+            n1.setRecipientType(com.project.entities.UserType.ROLE_CITIZEN);
+            n1.setRecipientId(updatedReport.getCitizen().getId());
+            n1.setReportId(updatedReport.getId());
+            n1.setType(com.project.entities.NotificationType.ASSIGNMENT);
+            notificationRepo.save(n1);
+
+            // Message for volunteer
+            String volunteerMsg = String.format("You have been assigned to: %s", (updatedReport.getDescription() != null ? updatedReport.getDescription().split("\\n")[0] : "Report"));
+            com.project.entities.Notification n2 = new com.project.entities.Notification();
+            n2.setMessage(volunteerMsg);
+            n2.setRecipientType(com.project.entities.UserType.ROLE_VOLUNTEER);
+            n2.setRecipientId(volunteer.getId());
+            n2.setReportId(updatedReport.getId());
+            n2.setType(com.project.entities.NotificationType.ASSIGNMENT);
+            notificationRepo.save(n2);
+
+            // Send emails (best-effort)
+            try {
+                if (updatedReport.getCitizen() != null && updatedReport.getCitizen().getEmail() != null) {
+                    emailService.send(updatedReport.getCitizen().getEmail(), "Your report has been claimed", citizenMsg);
+                }
+                if (volunteer.getMyuser() != null && volunteer.getMyuser().getEmail() != null) {
+                    emailService.send(volunteer.getMyuser().getEmail(), "You have a new assignment", volunteerMsg);
+                }
+            } catch (Exception e) {
+                // swallow email errors (non-critical)
+                e.printStackTrace();
+            }
+        } catch (Exception e) {
+            // Ensure notifications do not prevent the claim — log and continue
+            e.printStackTrace();
+        }
+
+        return mapper.map(updatedReport, ReportDTO.class);
+    }
+
+    // Reports assigned to a volunteer (by their user id)
+    @Override
+    public List<ReportDTO> getReportsByVolunteer(Long volunteerMyUserId) {
+        Volunteer volunteer = volunteerRepo.findByMyuserId(volunteerMyUserId)
+                .orElseThrow(() -> new ResourceNotFoundException("Volunteer not found"));
+
+        List<Report> reports = reportRepo.findByVolunteerId(volunteer.getId());
+        return reports.stream().map(r -> mapper.map(r, ReportDTO.class)).toList();
+    }
+
+    // Single report lookup
+    @Override
+    public ReportDTO getReportById(Long reportId) {
+        Report report = reportRepo.findById(reportId)
+                .orElseThrow(() -> new ResourceNotFoundException("Report not found"));
+        return mapper.map(report, ReportDTO.class);
     }
 
     // Volunteer updates report status
@@ -123,7 +187,8 @@ public class ReportServiceImpl implements ReportService {
                         new ResourceNotFoundException("Report not found"));
 
         if (report.getVolunteer() == null ||
-            !report.getVolunteer().getId().equals(volunteerId)) {
+            report.getVolunteer().getMyuser() == null ||
+            !report.getVolunteer().getMyuser().getId().equals(volunteerId)) {
 
             throw new AuthenticationFailedException(
                     "You are not authorized to update this report");

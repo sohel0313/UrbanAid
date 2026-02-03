@@ -21,9 +21,11 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { FileText, Clock, CheckCircle2, MessageSquare, Send } from 'lucide-react';
-import { mockReports } from '@/data/mockData';
 import { Report, ReportStatus } from '@/types';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import * as ReportsService from '@/lib/services/reports';
 
 export default function VolunteerDashboard() {
   const [selectedReport, setSelectedReport] = useState<Report | null>(null);
@@ -32,23 +34,127 @@ export default function VolunteerDashboard() {
   const [newStatus, setNewStatus] = useState<ReportStatus | ''>('');
   const [statusNote, setStatusNote] = useState('');
   const [chatMessage, setChatMessage] = useState('');
+  const [claimedIds, setClaimedIds] = useState<string[]>([]);
   const { toast } = useToast();
 
-  // Filter reports assigned to this volunteer (demo: volunteer id '2')
-  const assignedReports = mockReports.filter((r) => r.volunteerId === '2');
-  const inProgressCount = assignedReports.filter((r) => r.status === 'in-progress').length;
-  const completedCount = assignedReports.filter((r) => r.status === 'completed').length;
+  const { userId, userName } = useAuth();
+  const queryClient = useQueryClient();
 
-  const handleUpdateStatus = () => {
-    if (!newStatus) return;
-    
-    toast({
-      title: 'Status updated',
-      description: `Report status changed to ${newStatus}`,
-    });
-    setShowUpdateDialog(false);
-    setNewStatus('');
-    setStatusNote('');
+  // Nearby unassigned reports (reports volunteers can claim)
+  const { data: nearby = [], isLoading: isNearbyLoading } = useQuery({
+    queryKey: ['nearbyReports', userId],
+    queryFn: () => ReportsService.getNearbyReports(userId!),
+    enabled: !!userId,
+  });
+
+  // Reports assigned to this volunteer (their tasks)
+  const { data: myReports = [], isLoading: isMyLoading } = useQuery({
+    queryKey: ['myReports', userId],
+    queryFn: () => ReportsService.getMyReports(),
+    enabled: !!userId,
+  });
+
+  // volunteer profile (to access skill & availability)
+  const { data: volunteerProfile } = useQuery({
+    queryKey: ['volunteerProfile', userId],
+    queryFn: () => import('@/lib/services/volunteer').then(m => m.getMyProfile()),
+    enabled: !!userId,
+  });
+
+  const nearbyReports = (nearby || []).map((r: any) => ReportsService.mapDtoToReport(r));
+  const myMapped = (myReports || []).map((r: any) => ReportsService.mapDtoToReport(r));
+
+  const visibleNearby = nearbyReports.filter(r => !claimedIds.includes(String(r.id)));
+
+  const assignedCount = myMapped.filter((r) => r.status === 'assigned').length;
+  const inProgressCount = myMapped.filter((r) => r.status === 'in-progress').length;
+  const completedCount = myMapped.filter((r) => r.status === 'completed').length;
+
+  const [claimingId, setClaimingId] = useState<string | null>(null);
+
+  const handleClaim = async (report: any) => {
+    if (!userId) return;
+    setClaimingId(report.id);
+
+    // Optimistically mark as claimed so it disappears from nearby list immediately
+    setClaimedIds((s) => Array.from(new Set([...s, String(report.id)])));
+
+    try {
+      const resp = await ReportsService.claimReport(Number(report.id), Number(userId));
+
+      // Add the freshly assigned report to 'myReports' cache immediately
+      queryClient.setQueryData(['myReports', userId], (old: any) => {
+        const list = old || [];
+        // prepend the raw server response (so existing mapping logic will show it)
+        return [resp, ...list];
+      });
+
+      toast({ title: 'Report claimed', description: 'You have been assigned this task' });
+
+      // Ensure authoritative data is fetched (in case other fields changed)
+      queryClient.invalidateQueries(['nearbyReports', userId]);
+      queryClient.invalidateQueries(['myReports', userId]);
+    } catch (err: any) {
+      // Roll back optimistic hide by invalidating and removing id from claimedIds
+      queryClient.invalidateQueries(['nearbyReports', userId]);
+      queryClient.invalidateQueries(['myReports', userId]);
+      setClaimedIds((s) => s.filter((id) => id !== String(report.id)));
+
+      if (err?.status === 409) {
+        toast({ title: 'Claim failed', description: 'Someone else claimed this report', variant: 'destructive' });
+      } else {
+        toast({ title: 'Claim failed', description: err?.message || 'Unable to claim report', variant: 'destructive' });
+      }
+    } finally {
+      setClaimingId(null);
+    }
+  };
+
+  function doesMatchSkill(reportCategory?: string) {
+    if (!volunteerProfile || !volunteerProfile.skill || !reportCategory) return false;
+    const skill = (volunteerProfile.skill as string).toLowerCase();
+    const cat = (reportCategory as string).toLowerCase();
+    return skill.includes(cat) || cat.includes(skill);
+  }
+
+  const [updatingStatus, setUpdatingStatus] = useState(false);
+
+  const handleUpdateStatus = async () => {
+    if (!newStatus || !selectedReport || !userId) return;
+    setUpdatingStatus(true);
+
+    // map frontend status to backend enum names
+    const mapToBackend = (s: ReportStatus | '') => {
+      switch (s) {
+        case 'in-progress':
+          return 'IN_PROGRESS';
+        case 'created':
+          return 'CREATED';
+        case 'assigned':
+          return 'ASSIGNED';
+        case 'completed':
+          return 'COMPLETED';
+        default:
+          return s;
+      }
+    };
+
+    try {
+      await ReportsService.updateReportStatus(Number(selectedReport.id), mapToBackend(newStatus), Number(userId));
+      toast({ title: 'Status updated', description: `Report status changed to ${newStatus}` });
+
+      // refresh lists
+      queryClient.invalidateQueries(['myReports', userId]);
+      queryClient.invalidateQueries(['nearbyReports', userId]);
+
+      setShowUpdateDialog(false);
+      setNewStatus('');
+      setStatusNote('');
+    } catch (err: any) {
+      toast({ title: 'Update failed', description: err?.message || 'Unable to update status', variant: 'destructive' });
+    } finally {
+      setUpdatingStatus(false);
+    }
   };
 
   const handleSendMessage = () => {
@@ -73,7 +179,7 @@ export default function VolunteerDashboard() {
   };
 
   return (
-    <DashboardLayout userRole="volunteer" userName="Sarah Volunteer">
+    <DashboardLayout userRole="volunteer" userName={userName ?? 'User'}> 
       <div className="space-y-6">
         {/* Header */}
         <div>
@@ -85,7 +191,7 @@ export default function VolunteerDashboard() {
         <div className="grid sm:grid-cols-3 gap-4">
           <StatsCard
             title="Assigned Tasks"
-            value={assignedReports.length}
+            value={assignedCount}
             icon={<FileText className="w-5 h-5" />}
             variant="primary"
           />
@@ -103,10 +209,10 @@ export default function VolunteerDashboard() {
           />
         </div>
 
-        {/* Assigned Reports */}
+        {/* My Assigned Reports */}
         <div>
-          <h2 className="text-lg font-semibold text-foreground mb-4">Assigned Tasks</h2>
-          {assignedReports.length === 0 ? (
+          <h2 className="text-lg font-semibold text-foreground mb-4">My Tasks</h2>
+          {myMapped.length === 0 ? (
             <div className="card-elevated p-8 text-center">
               <FileText className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
               <h3 className="font-semibold text-foreground mb-2">No assigned tasks</h3>
@@ -116,7 +222,7 @@ export default function VolunteerDashboard() {
             </div>
           ) : (
             <div className="grid gap-4 lg:grid-cols-2">
-              {assignedReports.map((report) => (
+              {myMapped.map((report) => (
                 <div key={report.id} className="card-elevated p-5 space-y-4">
                   <div className="flex items-start justify-between gap-3">
                     <div className="space-y-1 min-w-0">
@@ -147,6 +253,55 @@ export default function VolunteerDashboard() {
                     >
                       Update Status
                     </Button>
+                    <Button size="sm" variant="ghost" onClick={() => navigate(`/volunteer/reports/${report.id}`)}>
+                      View Details
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Nearby (Claimable) Reports */}
+        <div>
+          <h2 className="text-lg font-semibold text-foreground mb-4">Nearby Tasks</h2>
+          {visibleNearby.length === 0 ? (
+            <div className="card-elevated p-8 text-center">
+              <FileText className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+              <h3 className="font-semibold text-foreground mb-2">No nearby tasks</h3>
+              <p className="text-muted-foreground">
+                There are no unassigned reports near you right now.
+              </p>
+            </div>
+          ) : (
+            <div className="grid gap-4 lg:grid-cols-2">
+              {visibleNearby.map((report) => (
+                <div key={report.id} className="card-elevated p-5 space-y-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="space-y-1 min-w-0">
+                      <h3 className="font-semibold text-foreground">{report.title} {doesMatchSkill(report.category) && <span className="text-xs text-primary ml-2">Matches your skill</span>}</h3>
+                      <StatusBadge status={report.status} />
+                    </div>
+                  </div>
+
+                  <p className="text-sm text-muted-foreground">{report.description}</p>
+
+                  <MapPreview address={report.location.address} className="h-32" />
+
+                  <div className="flex gap-2">
+                    {report.status === 'created' ? (
+                      <Button
+                        size="sm"
+                        className="flex-1"
+                        onClick={() => handleClaim(report)}
+                        disabled={claimingId === report.id}
+                      >
+                        {claimingId === report.id ? 'Claiming...' : 'Claim'}
+                      </Button>
+                    ) : (
+                      <div className="text-sm text-muted-foreground">Already claimed</div>
+                    )}
                   </div>
                 </div>
               ))}

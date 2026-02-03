@@ -17,7 +17,8 @@ public class CorsConfig {
         CorsConfiguration config = new CorsConfiguration();
 
         config.setAllowCredentials(true);
-        config.setAllowedOrigins(List.of("http://localhost:3000"));
+        // Allow local frontend dev servers (Vite default 5173 and older setups on 3000)
+        config.setAllowedOrigins(List.of("http://localhost:3000", "http://localhost:5173", "http://127.0.0.1:5173"));
         config.setAllowedHeaders(List.of(
                 "Authorization",
                 "Content-Type",

@@ -13,4 +13,7 @@ public interface UserService {
     
     List<UserDTO> listAllUsers();
 
-}
+    // Development helper: update password for a user identified by email
+    void updatePasswordByEmail(String email, String newPassword);
+
+} 

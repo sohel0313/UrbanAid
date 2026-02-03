@@ -112,17 +112,33 @@ public class ReportController {
                     .body("Image upload failed");
         }}
 
-    // 5️ CITIZEN VIEWS OWN REPORTS
+    // 5️ USER VIEWS OWN REPORTS (citizen OR volunteer)
     @GetMapping("/my")
-    @PreAuthorize("hasRole('CITIZEN')")
+    @PreAuthorize("hasAnyRole('CITIZEN','VOLUNTEER')")
     public ResponseEntity<List<ReportDTO>> getMyReports(Authentication authentication) {
 
         UserPrincipal principal = (UserPrincipal) authentication.getPrincipal();
-        Long citizenId = principal.getUserId();
+        Long userId = principal.getUserId();
+
+        boolean isVolunteer = principal.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_VOLUNTEER"));
+
+        if (isVolunteer) {
+            return ResponseEntity.ok(
+                reportService.getReportsByVolunteer(userId)
+            );
+        }
 
         return ResponseEntity.ok(
-            reportService.getReportsByCitizen(citizenId)
+            reportService.getReportsByCitizen(userId)
         );
+    }
+
+    // 7️ GET REPORT BY ID (for detail view)
+    @GetMapping("/{reportId}")
+    @PreAuthorize("hasAnyRole('CITIZEN','VOLUNTEER','ADMIN')")
+    public ResponseEntity<ReportDTO> getReportById(@PathVariable Long reportId) {
+        return ResponseEntity.ok(reportService.getReportById(reportId));
     }
 
     // 6️ ADMIN MONITORING

@@ -17,6 +17,12 @@ public interface ReportService {
     ReportDTO claimReport(Long reportId, Long volunteerId);
     ReportDTO updateReportStatus(Long reportId, Status status, Long volunteerId);
 
+    // Reports assigned to a volunteer (by their user id)
+    List<ReportDTO> getReportsByVolunteer(Long volunteerMyUserId);
+
     // Admin
     List<ReportDTO> getAllReports();
+
+    // Single report lookup
+    ReportDTO getReportById(Long reportId);
 }

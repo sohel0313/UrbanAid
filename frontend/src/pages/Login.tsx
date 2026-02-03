@@ -4,24 +4,32 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { MapPin, Mail, Lock, ArrowLeft } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import { useToast } from '@/hooks/use-toast';
 
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const { signIn } = useAuth();
+  const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    
-    // Simulate login - in production, this would call an API
-    setTimeout(() => {
+    try {
+      const resp = await signIn(email, password);
       setIsLoading(false);
-      // For demo, navigate to citizen dashboard
-      navigate('/citizen');
-    }, 1000);
-  };
+      const role = resp.role || localStorage.getItem('userRole') || '';
+      if (role.includes('ADMIN')) navigate('/admin');
+      else if (role.includes('VOLUNTEER')) navigate('/volunteer');
+      else navigate('/citizen');
+    } catch (err: any) {
+      setIsLoading(false);
+      toast({ title: 'Sign in failed', description: err?.message || 'Unable to sign in', variant: 'destructive' });
+    }
+  }; 
 
   return (
     <div className="min-h-screen bg-background flex">

@@ -27,10 +27,12 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { FileText, Users, CheckCircle2, Clock, UserPlus, Eye } from 'lucide-react';
-import { mockReports, mockAnalytics } from '@/data/mockData';
 import { Report } from '@/types';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
 import { MapPreview } from '@/components/MapPreview';
+import { useQuery } from '@tanstack/react-query';
+import * as AdminService from '@/lib/services/admin';
 
 const volunteers = [
   { id: '2', name: 'Sarah Volunteer' },
@@ -44,6 +46,9 @@ export default function AdminDashboard() {
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
   const [selectedVolunteer, setSelectedVolunteer] = useState('');
   const { toast } = useToast();
+  const { userName } = useAuth();
+
+  const { data: allReports = [], isLoading } = useQuery({ queryKey: ['adminReports'], queryFn: () => AdminService.getAllReports() });
 
   const formatDate = (date: Date) => {
     return new Intl.DateTimeFormat('en-US', {
@@ -76,7 +81,7 @@ export default function AdminDashboard() {
   };
 
   return (
-    <DashboardLayout userRole="admin" userName="Admin User">
+    <DashboardLayout userRole="admin" userName={userName ?? 'User'}>
       <div className="space-y-6">
         {/* Header */}
         <div>
@@ -88,26 +93,26 @@ export default function AdminDashboard() {
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <StatsCard
             title="Total Reports"
-            value={mockAnalytics.totalReports}
+            value={allReports.length}
             icon={<FileText className="w-5 h-5" />}
             variant="primary"
             trend={{ value: 12, isPositive: true }}
           />
           <StatsCard
             title="Active Volunteers"
-            value={mockAnalytics.activeVolunteers}
+            value={Array.from(new Set(allReports.map((r: any) => r.volunteerId))).filter(Boolean).length}
             icon={<Users className="w-5 h-5" />}
           />
           <StatsCard
             title="Resolved Issues"
-            value={mockAnalytics.resolvedIssues}
+            value={allReports.filter((r: any) => r.status === 'completed').length}
             icon={<CheckCircle2 className="w-5 h-5" />}
             variant="success"
             trend={{ value: 8, isPositive: true }}
           />
           <StatsCard
             title="Pending Reports"
-            value={mockAnalytics.pendingReports}
+            value={allReports.filter((r: any) => r.status !== 'completed').length}
             icon={<Clock className="w-5 h-5" />}
             variant="warning"
           />
@@ -146,7 +151,7 @@ export default function AdminDashboard() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {mockReports.map((report) => (
+                {allReports.map((report: any) => (
                   <TableRow key={report.id}>
                     <TableCell>
                       <div className="font-medium text-foreground">{report.title}</div>

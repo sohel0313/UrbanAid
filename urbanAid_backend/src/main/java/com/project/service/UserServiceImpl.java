@@ -52,4 +52,12 @@ public class UserServiceImpl implements UserService {
                 .toList();
     }
 
+    @Override
+    public void updatePasswordByEmail(String email, String newPassword) {
+        User user = userRespo.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userRespo.save(user);
+    }
+
 }

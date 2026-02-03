@@ -47,6 +47,12 @@ public class GlobalExceptionHandler {
 		System.out.println("in catch - ResourceNotFoundException");
 		return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ApiResponse("Failed", e.getMessage()));
 	}
+
+	@ExceptionHandler(com.project.custom_exceptions.ResourceConflictException.class)
+	public ResponseEntity<?> handleResourceConflictException(com.project.custom_exceptions.ResourceConflictException e) {
+		System.out.println("in catch - ResourceConflictException");
+		return ResponseEntity.status(HttpStatus.CONFLICT).body(new ApiResponse("Failed", e.getMessage()));
+	}
 	
 	@ExceptionHandler(UsernameNotFoundException.class)
 	public ResponseEntity<?> handleUsernameNotFoundException(UsernameNotFoundException e) {

@@ -27,7 +27,7 @@ public class Report extends BaseEntity {
     @Column(nullable = false)
     private Double longitude;
 
-    @Column(nullable = false, length = 500)
+    @Column(nullable = true, length = 500)
     private String imagepath;
 
     @Enumerated(EnumType.STRING)

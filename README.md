@@ -22,7 +22,7 @@ The platform focuses on transparency, faster issue resolution, and community par
 
 - <img width="940" height="466" alt="image" src="https://github.com/user-attachments/assets/2ed8cdca-5bb9-4bbd-8591-b8150f1627b4" />
 
-<img width="940" height="441" alt="image" src="https://github.com/user-attachments/assets/e1a3f20f-f95f-4b81-9051-9348716a78a5" />
+- <img width="940" height="441" alt="image" src="https://github.com/user-attachments/assets/e1a3f20f-f95f-4b81-9051-9348716a78a5" />
 
 
 ### 🧑‍🔧 Volunteer

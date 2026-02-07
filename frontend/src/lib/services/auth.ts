@@ -53,15 +53,52 @@ function mapRoleToUserType(role: RegisterPayload['role']) {
   }
 }
 
+// Add these to your RegisterPayload interface
+export interface RegisterPayload {
+  name: string;
+  email: string;
+  password: string;
+  role: "citizen" | "volunteer" | "admin";
+  mobile?: string;
+  // Extra fields for volunteer
+  area?: string;
+  latitude?: number;
+  longitude?: number;
+  skill?: string;
+  vtype?: string;
+}
+
 export async function register(payload: RegisterPayload) {
-  // backend requires CreateUserDTO - minimum: email, mobile, name, password, userType
+  // 1. If the user is a Volunteer, use the Volunteer registration endpoint
+  if (payload.role === "volunteer") {
+    const volunteerBody = {
+      user: {
+        name: payload.name,
+        email: payload.email,
+        password: payload.password,
+        mobile: payload.mobile,
+        userType: "ROLE_VOLUNTEER", // Matches your UserType Enum
+      },
+      vtype: payload.vtype || "GENERAL_HELP",  // Matches your Vtype Enum in VolunteerDTO
+      area: payload.area,
+      latitude: payload.latitude,
+      longitude: payload.longitude,
+      availability: true,
+      skill: payload.skill,
+    };
+
+    // Notice the different endpoint here
+    return publicPost("/volunteers/register", volunteerBody);
+  }
+
+  // 2. Otherwise, use the standard Citizen registration
   const body = {
     email: payload.email,
     mobile: payload.mobile,
     bio: "",
     name: payload.name,
     password: payload.password,
-    userType: mapRoleToUserType(payload.role),
+    userType: "ROLE_CITIZEN",
   };
 
   return publicPost("/users/register", body);

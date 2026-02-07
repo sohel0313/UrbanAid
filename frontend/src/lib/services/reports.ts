@@ -6,7 +6,7 @@ export interface ReportFormData {
   description: string;
   category: string;
   address: string;
-
+  location:string;
   latitude?: number;
   longitude?: number;
 
@@ -55,7 +55,7 @@ export async function createReport(data: ReportFormData, citizenId: number) {
 
  const payload = {
   description: data.description,
-  location: data.address,
+  location: data.location,
 
   latitude: data.latitude ?? null,
   longitude: data.longitude ?? null,
@@ -109,7 +109,7 @@ export function mapDtoToReport(dto: any) {
 }
 
 export async function getNearbyReports(volunteerId: number) {
-  return authGet(`/reports/nearby?volunteerId=${volunteerId}`);
+  return authGet(`/reports/nearby`);
 }
 
 export async function claimReport(reportId: number, volunteerId: number) {

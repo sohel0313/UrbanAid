@@ -5,9 +5,9 @@ UrbanAid is a full-stack web application designed to improve urban living by ena
 The platform focuses on transparency, faster issue resolution, and community participation using modern web technologies.
 
 ---
-<img width="940" height="503" alt="image" src="https://github.com/user-attachments/assets/85b18f50-07b4-4cd4-876c-6dd6e2f4741d" />
+<img width="940" height="491" alt="image" src="https://github.com/user-attachments/assets/8601ed0c-2d03-40e4-b002-3a486ec68f85" />
 
-<img width="940" height="1040" alt="image" src="https://github.com/user-attachments/assets/ac2c94b5-5336-4455-ad2d-eae4f95e2b3a" />
+<img width="940" height="987" alt="image" src="https://github.com/user-attachments/assets/f5afd0b6-23ab-4f0e-b8e3-ffa3bb483a76" />
 
 
 

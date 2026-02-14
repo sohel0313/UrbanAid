@@ -109,7 +109,7 @@ export function mapDtoToReport(dto: any) {
 }
 
 export async function getNearbyReports(volunteerId: number) {
-  return authGet(`/reports/nearby`);
+  return authGet(`/reports/nearby?volunteerId=${volunteerId}`);
 }
 
 export async function claimReport(reportId: number, volunteerId: number) {

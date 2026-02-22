@@ -8,14 +8,18 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.project.custom_exceptions.AuthenticationFailedException;
 import com.project.custom_exceptions.InvalidInputException;
+import com.project.custom_exceptions.ResourceConflictException;
 import com.project.custom_exceptions.ResourceNotFoundException;
 import com.project.dto.AlertRequestDto;
 import com.project.dto.CreateReportDTO;
 import com.project.dto.ReportDTO;
+import com.project.entities.Notification;
 import com.project.entities.Report;
 import com.project.entities.Status;
 import com.project.entities.User;
+import com.project.entities.UserType;
 import com.project.entities.Volunteer;
+import com.project.repository.NotificationRepository;
 import com.project.repository.ReportRepository;
 import com.project.repository.UserRepository;
 import com.project.repository.VolunteerRepository;
@@ -30,7 +34,7 @@ public class ReportServiceImpl implements ReportService {
     private final ReportRepository reportRepo;
     private final UserRepository userRepo;
     private final VolunteerRepository volunteerRepo;
-    private final com.project.repository.NotificationRepository notificationRepo;
+    private final NotificationRepository notificationRepo;
     private final ModelMapper mapper;
     private final EmailService emailService;
     private final AlertService alertService;
@@ -109,7 +113,7 @@ public class ReportServiceImpl implements ReportService {
         // number of rows affected. If 0 rows were updated, someone else claimed it.
         int updated = reportRepo.assignIfStatus(reportId, volunteer, Status.ASSIGNED, Status.CREATED);
         if (updated == 0) {
-            throw new com.project.custom_exceptions.ResourceConflictException("Report already assigned or closed");
+            throw new ResourceConflictException("Report already assigned or closed");
         }
 
         // fetch the updated report and return it
@@ -122,9 +126,9 @@ public class ReportServiceImpl implements ReportService {
             String volName = volunteer.getMyuser() != null ? volunteer.getMyuser().getName() : "A volunteer";
             String citizenMsg = String.format("%s has claimed your report: %s", volName, (updatedReport.getDescription() != null ? updatedReport.getDescription().split("\\n")[0] : "Report"));
 
-            com.project.entities.Notification n1 = new com.project.entities.Notification();
+            Notification n1 = new com.project.entities.Notification();
             n1.setMessage(citizenMsg);
-            n1.setRecipientType(com.project.entities.UserType.ROLE_CITIZEN);
+            n1.setRecipientType(UserType.ROLE_CITIZEN);
             n1.setRecipientId(updatedReport.getCitizen().getId());
             n1.setReportId(updatedReport.getId());
             n1.setType(com.project.entities.NotificationType.ASSIGNMENT);
@@ -132,9 +136,9 @@ public class ReportServiceImpl implements ReportService {
 
             // Message for volunteer
             String volunteerMsg = String.format("You have been assigned to: %s", (updatedReport.getDescription() != null ? updatedReport.getDescription().split("\\n")[0] : "Report"));
-            com.project.entities.Notification n2 = new com.project.entities.Notification();
+            Notification n2 = new Notification();
             n2.setMessage(volunteerMsg);
-            n2.setRecipientType(com.project.entities.UserType.ROLE_VOLUNTEER);
+            n2.setRecipientType(UserType.ROLE_VOLUNTEER);
             n2.setRecipientId(volunteer.getId());
             n2.setReportId(updatedReport.getId());
             n2.setType(com.project.entities.NotificationType.ASSIGNMENT);
